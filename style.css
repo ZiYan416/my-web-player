@@ -1,11 +1,11 @@
 :root {
-    /* 提取自第一张图片的色调：奶绿与淡黄 */
+    /* 默认主题色 (初始值) */
     --bg-gradient-start: #f2fce2; /* 极淡的绿色 */
     --bg-gradient-end: #fffdf2;   /* 极淡的黄色 */
     --primary-color: #8ccf5e;     /* 清新的草绿 (播放按钮/高亮) */
     --text-main: #333333;
     --text-sub: #888888;
-    --halo-color: rgba(165, 216, 113, 0.25); /* 光环颜色 */
+    --halo-color: rgba(140, 207, 94, 0.25); /* 光环颜色 */
     --halo-border: rgba(255, 255, 255, 0.4);
 }
 
@@ -22,9 +22,15 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    /* 纯色渐变感背景 */
-    background: linear-gradient(120deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+
+    /* 关键修改：使用变量，并添加长过渡时间 */
+    background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+    transition: background 1.5s ease-in-out; /* 背景切换耗时1.5秒，丝滑过渡 */
 }
+
+/* 所有的颜色引用都必须基于变量，这样JS改变量时，界面才会跟着变 */
+.lyric-line.highlight { color: var(--primary-color); }
+.play-toggle { background: var(--primary-color); }
 
 .player-window {
     width: 95%;
@@ -150,6 +156,8 @@ body {
     
     /* 稍微向右偏移，模拟图片构图 */
     transform: translateX(50px); 
+    /* 保持原有的纹理，但让背景色动态 */
+    transition: background 1.5s ease;
 }
 
 .vinyl-disk {
