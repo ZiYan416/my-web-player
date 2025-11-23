@@ -1,12 +1,14 @@
 :root {
-    /* 默认主题色 (初始值) */
-    --bg-gradient-start: #f2fce2; /* 极淡的绿色 */
-    --bg-gradient-end: #fffdf2;   /* 极淡的黄色 */
-    --primary-color: #8ccf5e;     /* 清新的草绿 (播放按钮/高亮) */
-    --text-main: #333333;
-    --text-sub: #888888;
-    --halo-color: rgba(140, 207, 94, 0.25); /* 光环颜色 */
-    --halo-border: rgba(255, 255, 255, 0.4);
+    /* 1. 全局固定背景：柔和的米灰色，不再变动 */
+    --app-bg: #f4f6f8; 
+    
+    /* 2. 动态变量：这些颜色会随着歌曲改变，但只影响边框和高亮 */
+    --theme-color: #627d98; /* 默认主题色 */
+    --theme-border: rgba(98, 125, 152, 0.3); 
+    --halo-color: rgba(98, 125, 152, 0.15);
+
+    --text-main: #2c3e50;
+    --text-sub: #7f8c8d;
 }
 
 * {
@@ -14,6 +16,7 @@
     padding: 0;
     box-sizing: border-box;
     font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    user-select: none; /* 防止频繁点击选中文字 */
 }
 
 body {
@@ -22,29 +25,27 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-
-    /* 关键修改：使用变量，并添加长过渡时间 */
-    background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
-    transition: background 1.5s ease-in-out; /* 背景切换耗时1.5秒，丝滑过渡 */
+    background-color: var(--app-bg); /* 固定背景 */
 }
 
-/* 所有的颜色引用都必须基于变量，这样JS改变量时，界面才会跟着变 */
-.lyric-line.highlight { color: var(--primary-color); }
-.play-toggle { background: var(--primary-color); }
-
+/* 播放器主体窗口 */
 .player-window {
     width: 95%;
     height: 95%;
-    max-width: 1400px;
-    background: rgba(255, 255, 255, 0.1); /* 极低透明度，为了透出背景 */
+    max-width: 1600px;
+    background: rgba(255, 255, 255, 0.85); /* 稍微不那么透明，提升质感 */
     border-radius: 24px;
     display: flex;
     flex-direction: column;
     position: relative;
-    /* 不使用模糊的backdrop-filter，保持清新透亮 */
+    
+    /* 核心修改：边框变色逻辑 */
+    border: 2px solid var(--theme-border);
+    box-shadow: 0 20px 60px -10px var(--theme-border);
+    transition: border-color 0.8s ease, box-shadow 0.8s ease; /* 边框缓慢呼吸 */
 }
 
-/* 顶部 */
+/* 顶部与通用布局 (保持原有逻辑) */
 .top-bar {
     height: 50px;
     display: flex;
@@ -52,263 +53,281 @@ body {
     align-items: center;
     padding: 0 30px;
     color: var(--text-sub);
-    font-size: 1.2rem;
 }
-.window-actions { display: flex; gap: 15px; font-size: 1rem; }
+.window-actions { display: flex; gap: 15px; }
 
-/* 主体区域 */
 .main-area {
     flex: 1;
     display: flex;
     align-items: center;
     overflow: hidden;
+    position: relative; /* 为列表弹窗定位 */
 }
 
-/* 左侧面板 */
+/* 左侧信息 */
 .left-panel {
     flex: 1;
     padding-left: 80px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    z-index: 2; /* 保证文字在最上层 */
+    z-index: 2;
 }
-
-.song-header { margin-bottom: 40px; }
 
 .song-header h1 {
-    font-size: 3rem;
-    font-weight: 600;
+    font-size: 2.8rem;
     color: var(--text-main);
-    margin-bottom: 10px;
-    letter-spacing: -1px;
+    margin-bottom: 8px;
 }
-
 .song-header p {
-    font-size: 1.2rem;
-    color: var(--text-sub);
+    font-size: 1.1rem;
+    color: var(--theme-color); /* 歌手名使用主题色 */
+    transition: color 0.5s;
 }
 
-/* 歌词区域 */
 .lyrics-box {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+    margin-top: 30px;
+    min-height: 200px;
 }
 
-.lyric-line {
-    font-size: 1.3rem;
-    color: #a0a0a0;
-    transition: all 0.3s ease;
-}
-
-.lyric-line.jp {
-    font-size: 0.9rem;
-    margin-top: -10px;
-    margin-bottom: 5px;
-    font-weight: 300;
-}
-
-.lyric-line.highlight {
-    color: var(--primary-color); /* 绿色高亮 */
-    font-weight: bold;
-}
-
-.lyric-line.active {
-    color: var(--text-main);
-    font-size: 1.6rem;
-    font-weight: bold;
-    margin: 10px 0;
-}
-
-/* 右侧：磨砂黑胶核心设计 */
+/* 右侧光环 (保持不变) */
 .right-panel {
-    flex: 1.2; /* 让右侧稍微宽一点 */
+    flex: 1.2;
     height: 100%;
-    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    /* 溢出隐藏，让大圆盘切边 */
-    overflow: visible; 
+    position: relative;
+    overflow: visible;
 }
 
-/* 那个巨大的彩色光环 */
 .vinyl-halo {
     width: 550px;
     height: 550px;
     border-radius: 50%;
     background: var(--halo-color);
-    border: 1px solid var(--halo-border);
-    /* 关键：模拟黑胶纹理的径向渐变 */
+    border: 1px solid rgba(255,255,255,0.4);
     background-image: repeating-radial-gradient(
         rgba(255, 255, 255, 0.1) 0px,
         rgba(255, 255, 255, 0.1) 2px,
         transparent 3px,
         transparent 6px
     );
-    backdrop-filter: blur(10px); /* 磨砂感 */
-    box-shadow: 0 20px 50px rgba(140, 207, 94, 0.15);
-    
+    backdrop-filter: blur(12px);
     display: flex;
     justify-content: center;
     align-items: center;
-    
-    /* 稍微向右偏移，模拟图片构图 */
-    transform: translateX(50px); 
-    /* 保持原有的纹理，但让背景色动态 */
-    transition: background 1.5s ease;
+    transition: background 1s ease;
+    transform: translateX(50px);
 }
 
 .vinyl-disk {
-    width: 360px;
-    height: 360px;
+    width: 440px;
+    height: 440px;
     border-radius: 50%;
-    background: #111; /* 黑胶底色 */
+    background: #151515;
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
     animation: spin 20s linear infinite;
     animation-play-state: paused;
-    /* 纯黑胶纹理 */
-    background: radial-gradient(
-        #111 50%,
-        #1a1a1a 55%,
-        #111 60%,
-        #1a1a1a 65%,
-        #111 100%
-    );
+    border: 3px solid rgba(255,255,255,0.1);
 }
 
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 .album-cover {
-    width: 240px;
-    height: 240px;
+    width: 360px;
+    height: 360px;
     border-radius: 50%;
     background-size: cover;
     background-position: center;
-    border: 8px solid #0a0a0a;
+    border: 6px solid #1a1a1a;
 }
 
-/* 底部控制栏 */
+/* --- 交互设计重点：按钮反馈 --- */
 .control-bar {
     height: 100px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 40px;
-    /* 底部也有一点点背景色，但很淡 */
+    border-top: 1px solid rgba(0,0,0,0.03);
 }
 
+/* 通用按钮样式 */
 .icon-btn {
-    font-size: 1.2rem;
-    color: var(--text-sub);
     cursor: pointer;
-    margin-right: 15px;
-    transition: color 0.2s;
-}
-.icon-btn:hover { color: var(--text-main); }
-
-.text-btn {
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 500;
+    color: var(--text-sub);
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    font-size: 1.1rem;
 }
 
-/* 中间控制区 */
-.center-controls {
-    flex: 1;
-    max-width: 600px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
+/* 1. 悬停反馈 (Hover) */
+.hover-effect:hover {
+    color: var(--theme-color);
+    transform: translateY(-2px); /* 微微上浮 */
 }
 
-.buttons {
-    display: flex;
-    align-items: center;
-    gap: 25px;
-    font-size: 1.4rem;
+/* 2. 点击反馈 (Active) */
+.hover-effect:active {
+    transform: scale(0.92); /* 微微缩小，模拟按压 */
     color: var(--text-main);
 }
 
-.secondary-icon { font-size: 1.1rem; color: #aaa; }
+.text-btn {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.9rem;
+    padding: 8px 16px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.text-btn:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.1); transform: translateY(-1px); }
+.text-btn:active { transform: scale(0.98); }
 
+/* 播放按钮特殊处理 */
 .play-toggle {
-    width: 55px;
-    height: 55px;
-    background: var(--primary-color);
+    width: 60px;
+    height: 60px;
+    background: var(--theme-color);
     border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
     color: white;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     cursor: pointer;
-    box-shadow: 0 5px 15px rgba(140, 207, 94, 0.4);
-    transition: transform 0.2s;
+    box-shadow: 0 8px 20px var(--halo-color);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 弹性动画 */
 }
-.play-toggle:hover { transform: scale(1.05); }
 
-/* 极简进度条 */
-.progress-container {
-    width: 100%;
+.play-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 25px var(--halo-color);
+}
+.play-toggle:active {
+    transform: scale(0.95);
+}
+
+/* --- 音量控制 (悬停显示) --- */
+.volume-wrapper {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 0.8rem;
-    color: var(--text-sub);
+    height: 100%;
 }
 
-#progress-bar {
+.volume-slider-popup {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) scaleY(0); /* 默认隐藏 */
+    transform-origin: bottom;
+    background: white;
+    padding: 15px 10px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+    z-index: 10;
+}
+
+/* 鼠标放上去时显示滑块 */
+.volume-wrapper:hover .volume-slider-popup {
+    transform: translateX(-50%) scaleY(1);
+}
+
+#volume-slider {
+    writing-mode: bt-lr; /* 针对某些浏览器的垂直写法 */
+    appearance: slider-vertical; /* 标准垂直滑块 */
+    width: 8px;
+    height: 80px;
+    cursor: pointer;
+    accent-color: var(--theme-color);
+}
+
+/* --- 播放列表弹窗 --- */
+.playlist-modal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    width: 400px;
+    max-height: 500px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+    z-index: 100;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    
+    /* 隐藏状态 */
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.playlist-modal.show {
+    opacity: 1;
+    pointer-events: all;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.playlist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+.playlist-items {
+    list-style: none;
+    overflow-y: auto;
+    max-height: 400px;
+}
+.playlist-items li {
+    padding: 12px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-main);
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+.playlist-items li:hover { background: #f5f5f5; }
+.playlist-items li.active {
+    background: var(--halo-color);
+    color: var(--theme-color);
+    font-weight: bold;
+}
+
+/* 进度条与右侧杂项 */
+.center-controls {
     flex: 1;
-    height: 4px;
-    appearance: none;
-    background: rgba(0,0,0,0.05);
-    border-radius: 2px;
-    cursor: pointer;
-}
-
-#progress-bar::-webkit-slider-thumb {
-    appearance: none;
-    width: 10px;
-    height: 10px;
-    background: var(--text-main);
-    border-radius: 50%;
-    transition: transform 0.1s;
-}
-#progress-bar:hover::-webkit-slider-thumb { transform: scale(1.3); }
-
-/* 右侧标签 */
-.right-actions {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 15px;
+    gap: 8px;
 }
-.tag-badge {
-    border: 1px solid #d4bc8b; /* 金色边框 */
-    color: #d4bc8b;
-    padding: 2px 6px;
-    font-size: 0.7rem;
-    border-radius: 4px;
-}
+.buttons { display: flex; gap: 25px; align-items: center; font-size: 1.2rem; }
+.progress-container { width: 100%; max-width: 500px; display: flex; gap: 10px; align-items: center; font-size: 0.8rem; color: #999; }
+#progress-bar { flex: 1; accent-color: var(--theme-color); cursor: pointer; height: 4px; }
+.right-actions { display: flex; gap: 20px; align-items: center; }
+.tag-badge { border: 1px solid #d4bc8b; color: #d4bc8b; padding: 2px 6px; font-size: 0.7rem; border-radius: 4px; }
 
-/* 响应式适配 */
 @media (max-width: 900px) {
     .main-area { flex-direction: column; text-align: center; }
     .left-panel { padding-left: 0; margin-top: 20px; }
-    .right-panel { overflow: hidden; height: 400px; }
-    .vinyl-halo { width: 300px; height: 300px; transform: translateX(0); }
-    .vinyl-disk { width: 200px; height: 200px; }
-    .album-cover { width: 140px; height: 140px; }
-    .lyric-line { font-size: 1rem; }
-    .lyric-line.active { font-size: 1.2rem; }
+    .right-panel { height: 350px; }
+    .vinyl-halo { width: 280px; height: 280px; transform: translateX(0); }
+    .vinyl-disk { width: 180px; height: 180px; }
+    .album-cover { width: 120px; height: 120px; }
+    .playlist-modal { width: 90%; }
 }

@@ -1,0 +1,16 @@
+[
+  {
+    "title": "Tamaki (环)",
+    "artist": "RADWIMPS",
+    "cover": "https://i.scdn.co/image/ab67616d0000b273a30233241437270d7e8f9f09",
+    "src": "./music/RADWIMPS - Tamaki (环).mp3",
+    "theme": { "primary": "#8ccf5e", "border": "rgba(140, 207, 94, 0.4)", "halo": "rgba(140, 207, 94, 0.2)" }
+  },
+  {
+    "title": "说好不哭 (with 五月天阿信)",
+    "artist": "周杰伦",
+    "cover": "https://upload.wikimedia.org/wikipedia/en/7/75/M83_-_Midnight_City.jpg",
+    "src": "./music/周杰伦 - 说好不哭 (with 五月天阿信).mp3",
+    "theme": { "primary": "#9b59b6", "border": "rgba(155, 89, 182, 0.4)", "halo": "rgba(155, 89, 182, 0.2)" }
+  }
+]
