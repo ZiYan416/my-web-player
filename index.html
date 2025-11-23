@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Web Player</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- 引入图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- 背景层 -->
+    <div class="background" id="bg-layer"></div>
+
+    <div class="player-container">
+        <!-- 顶部最小化/关闭 (装饰用) -->
+        <div class="window-controls">
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+
+        <div class="main-content">
+            <!-- 左侧：歌词与信息 -->
+            <div class="left-panel">
+                <div class="song-info">
+                    <h1 id="song-title">等待播放...</h1>
+                    <p id="artist-name">请上传本地音乐文件</p>
+                </div>
+                
+                <div class="lyrics-container">
+                    <p class="lyric-line">Mine mine mine mine</p>
+                    <p class="lyric-line">太快 就承认 我真的很想你</p>
+                    <p class="lyric-line active">会不会没有男子气概 You say</p>
+                    <p class="lyric-line">哎哟 你雨伞雨伞赶紧打开</p>
+                    <p class="lyric-line">哎哟 你雨伞雨伞赶紧打开</p>
+                    <p class="lyric-line">在此处显示歌词 (本地文件需LRC支持，此处为演示)</p>
+                </div>
+            </div>
+
+            <!-- 右侧：黑胶唱片 -->
+            <div class="right-panel">
+                <div class="vinyl-wrapper">
+                    <div class="vinyl-disk" id="vinyl">
+                        <div class="album-cover" id="album-art" style="background-image: url('https://via.placeholder.com/300?text=Music');"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部控制栏 -->
+        <div class="control-bar">
+            <!-- 上传按钮区域 -->
+            <div class="file-upload">
+                <label for="file-input" class="upload-btn">
+                    <i class="fa-solid fa-folder-open"></i> 打开文件
+                </label>
+                <input type="file" id="file-input" accept="audio/*" hidden>
+            </div>
+
+            <!-- 播放控制 -->
+            <div class="controls">
+                <i class="fa-solid fa-shuffle"></i>
+                <i class="fa-solid fa-backward-step" id="prev-btn"></i>
+                <div class="play-btn-wrapper" id="play-pause-btn">
+                    <i class="fa-solid fa-play" id="play-icon"></i>
+                </div>
+                <i class="fa-solid fa-forward-step" id="next-btn"></i>
+                <i class="fa-solid fa-volume-high"></i>
+            </div>
+
+            <!-- 进度条 -->
+            <div class="progress-area">
+                <span id="current-time">00:00</span>
+                <input type="range" id="progress-bar" value="0" min="0" max="100">
+                <span id="duration">00:00</span>
+            </div>
+            
+            <!-- 其他图标 -->
+            <div class="extra-controls">
+                <i class="fa-regular fa-heart"></i>
+                <i class="fa-solid fa-list"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入 jsmediatags 用于读取MP3封面 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
