@@ -10,7 +10,7 @@ const artistName = document.getElementById('artist-name');
 const albumArt = document.getElementById('album-art');
 const root = document.documentElement;
 
-// 列表相关元素
+// 列表与控制
 const playlistBtn = document.getElementById('playlist-btn');
 const playlistModal = document.getElementById('playlist-modal');
 const closePlaylistBtn = document.getElementById('close-playlist');
@@ -19,84 +19,89 @@ const volumeSlider = document.getElementById('volume-slider');
 const muteBtn = document.getElementById('mute-btn');
 const fileInput = document.getElementById('file-input');
 
-// 工具库
+// 新增控制按钮
+const shuffleBtn = document.getElementById('shuffle-btn');
+const loopBtn = document.getElementById('loop-btn');
+
 const colorThief = new ColorThief();
 
-let playlist = []; // 初始为空，等待读取 JSON
+// --- 状态变量 ---
+let playlist = []; 
 let isPlaying = false;
 let currentSongIndex = 0;
 let hasLoadedSong = false;
 let isMuted = false;
 let previousVolume = 1;
 
-// --- 1. 初始化：读取 music 文件夹下的配置文件 ---
+// 播放模式状态
+let isShuffle = false; 
+// loopMode: 'list' (列表循环), 'single' (单曲循环), 'none' (顺序播放，播完停止)
+let loopMode = 'list'; 
+
+// --- 1. 初始化 ---
 async function initPlayer() {
     try {
-        // 请求同目录下的 music/playlist.json
         const response = await fetch('./music/playlist.json');
         if (!response.ok) throw new Error("无法读取播放列表");
-        
         const data = await response.json();
         
         if (Array.isArray(data) && data.length > 0) {
             playlist = data;
-            // 渲染列表但不播放
             renderPlaylist();
-            // 预加载第一首的信息（但不播放）
             loadSong(0, false); 
         } else {
             showEmptyState();
         }
     } catch (error) {
-        console.warn("读取预设歌单失败或文件不存在:", error);
+        console.warn("读取预设歌单失败:", error);
         showEmptyState();
     }
 }
+initPlayer();
 
 function showEmptyState() {
     songTitle.innerText = "播放列表为空";
     artistName.innerText = "请上传本地音乐文件";
-    playlistItems.innerHTML = '<li style="text-align:center; color:#999; cursor:default;">暂无歌曲</li>';
+    playlistItems.innerHTML = '<li style="justify-content:center; color:#999; cursor:default;">暂无歌曲</li>';
+    albumArt.style.backgroundImage = "url('https://via.placeholder.com/300?text=Empty')";
+    audio.src = "";
+    hasLoadedSong = false;
 }
 
-// 执行初始化
-initPlayer();
+// --- 2. 播放核心逻辑 ---
 
-// --- 2. 核心功能 ---
-
-// 加载歌曲
-// autoPlay: 是否自动播放（初始化时为false，切歌时为true）
 function loadSong(index, autoPlay = true) {
-    if (index < 0 || index >= playlist.length) return;
+    if (playlist.length === 0) return;
+    // 边界检查
+    if (index < 0) index = playlist.length - 1;
+    if (index >= playlist.length) index = 0;
 
-    const song = playlist[index];
     currentSongIndex = index;
+    const song = playlist[index];
     
     songTitle.innerText = song.title;
     artistName.innerText = song.artist;
     
-    // 处理封面：如果是本地上传的Blob URL，或者是网络链接
     const coverUrl = song.cover || 'https://via.placeholder.com/300?text=Music';
     albumArt.style.backgroundImage = `url('${coverUrl}')`;
     
     audio.src = song.src;
     
-    // 应用主题
     if (song.theme) {
         applyTheme(song.theme);
     } else {
-        // 如果这首歌没有预设颜色（比如新上传的），尝试提取
         extractColorFromCover(coverUrl);
     }
 
-    updatePlaylistHighlight(index);
+    updatePlaylistHighlight();
     hasLoadedSong = true;
 
     if (autoPlay) {
         playSong();
     } else {
-        // 仅仅是预加载，不播放，也不转动
-        pauseSong(); 
+        pauseSong();
+        // 重置黑胶角度
+        vinyl.style.transform = 'rotate(0deg)';
     }
 }
 
@@ -108,11 +113,7 @@ function applyTheme(theme) {
 
 // 播放/暂停
 playPauseBtn.addEventListener('click', () => {
-    if (playlist.length === 0) {
-        alert("播放列表为空，请先打开文件！");
-        return;
-    }
-    // 如果是刚打开网页还没加载过
+    if (playlist.length === 0) return alert("请先添加歌曲！");
     if (!hasLoadedSong) {
         loadSong(0, true);
     } else {
@@ -121,12 +122,7 @@ playPauseBtn.addEventListener('click', () => {
 });
 
 function playSong() {
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-        playPromise.catch(error => {
-            console.error("播放失败:", error);
-        });
-    }
+    audio.play().catch(e => console.error("播放失败", e));
     isPlaying = true;
     playIcon.classList.remove('fa-play');
     playIcon.classList.add('fa-pause');
@@ -141,91 +137,230 @@ function pauseSong() {
     vinyl.style.animationPlayState = 'paused';
 }
 
-// 切歌
+// --- 3. 切歌逻辑 (核心修改) ---
+
+// 计算下一首的索引
+function getNextIndex() {
+    // 如果是随机播放
+    if (isShuffle) {
+        if (playlist.length <= 1) return 0;
+        let randomIndex;
+        do {
+            randomIndex = Math.floor(Math.random() * playlist.length);
+        } while (randomIndex === currentSongIndex); // 避免随机到同一首
+        return randomIndex;
+    }
+    
+    // 正常逻辑
+    let nextIndex = currentSongIndex + 1;
+    
+    // 如果到了最后一首
+    if (nextIndex >= playlist.length) {
+        if (loopMode === 'list') {
+            return 0; // 列表循环：回到开头
+        } else {
+            return -1; // 顺序播放：停止，返回 -1
+        }
+    }
+    return nextIndex;
+}
+
+// 上一首 (通常上一首逻辑比较简单：列表循环或随机)
 document.getElementById('prev-btn').addEventListener('click', () => {
     if (playlist.length === 0) return;
-    currentSongIndex--;
-    if (currentSongIndex < 0) currentSongIndex = playlist.length - 1;
-    loadSong(currentSongIndex);
+    
+    if (audio.currentTime > 3) {
+        // 如果播放超过3秒，点上一首通常是重播当前
+        audio.currentTime = 0;
+    } else {
+        // 简单处理：上一首不随机，方便用户找回刚听过的歌
+        let prevIndex = currentSongIndex - 1;
+        if (prevIndex < 0) prevIndex = playlist.length - 1;
+        loadSong(prevIndex);
+    }
 });
 
+// 下一首按钮点击
 document.getElementById('next-btn').addEventListener('click', () => {
     if (playlist.length === 0) return;
-    currentSongIndex++;
-    if (currentSongIndex > playlist.length - 1) currentSongIndex = 0;
-    loadSong(currentSongIndex);
+    
+    // 点击下一首时，如果是单曲循环，通常用户希望强制切到下一首
+    // 所以这里暂时忽略 loopMode === 'single' 的逻辑
+    let index = getNextIndex();
+    if (index === -1) index = 0; // 手动切歌到了末尾，强制回到第一首
+    loadSong(index);
 });
 
+// 自动播放结束监听
 audio.addEventListener('ended', () => {
-    document.getElementById('next-btn').click();
+    if (loopMode === 'single') {
+        // 单曲循环：重播
+        audio.currentTime = 0;
+        playSong();
+    } else {
+        const index = getNextIndex();
+        if (index !== -1) {
+            loadSong(index, true);
+        } else {
+            // 顺序播放结束，停止
+            pauseSong();
+            audio.currentTime = 0;
+            isPlaying = false; // 确保状态重置
+        }
+    }
 });
 
-// --- 3. 播放列表 UI ---
+// --- 4. 播放模式切换 ---
+
+// 随机播放切换
+shuffleBtn.addEventListener('click', () => {
+    isShuffle = !isShuffle;
+    if (isShuffle) {
+        shuffleBtn.classList.add('active');
+        shuffleBtn.title = "随机播放：开";
+    } else {
+        shuffleBtn.classList.remove('active');
+        shuffleBtn.title = "随机播放：关";
+    }
+});
+
+// 循环模式切换 (列表 -> 单曲 -> 顺序 -> 列表)
+loopBtn.addEventListener('click', () => {
+    if (loopMode === 'list') {
+        // 切换到单曲循环
+        loopMode = 'single';
+        loopBtn.classList.add('active'); // 激活色
+        loopBtn.classList.remove('fa-repeat');
+        loopBtn.classList.add('fa-1');   // 变成数字1图标
+        loopBtn.title = "单曲循环";
+    } else if (loopMode === 'single') {
+        // 切换到顺序播放 (播完停止)
+        loopMode = 'none';
+        loopBtn.classList.remove('active'); // 灰色
+        loopBtn.classList.remove('fa-1');
+        loopBtn.classList.add('fa-repeat'); // 换回循环图标但灰色
+        loopBtn.style.opacity = "0.5"; // 视觉上变暗表示不循环
+        loopBtn.title = "顺序播放 (播完停止)";
+    } else {
+        // 切换回列表循环
+        loopMode = 'list';
+        loopBtn.classList.add('active'); // 激活色
+        loopBtn.style.opacity = "1";
+        loopBtn.title = "列表循环";
+    }
+});
+
+// --- 5. 播放列表与删除功能 ---
+
 function renderPlaylist() {
     playlistItems.innerHTML = "";
+    if (playlist.length === 0) return showEmptyState();
+
+    playlist.forEach((song, index) => {
+        const li = document.createElement('li');
+        
+        // 生成列表项 HTML
+        li.innerHTML = `
+            <div class="song-info-wrapper">
+                <span style="font-weight:500;">${song.title}</span>
+                <span style="font-size:0.8rem; opacity:0.7;">${song.artist}</span>
+            </div>
+            <div class="delete-btn" title="从列表中移除">
+                <i class="fa-solid fa-trash"></i>
+            </div>
+        `;
+
+        // 点击播放
+        li.addEventListener('click', (e) => {
+            loadSong(index);
+            // playlistModal.classList.remove('show'); // 可选：点歌后是否关闭弹窗
+        });
+
+        // 删除按钮点击事件
+        const delBtn = li.querySelector('.delete-btn');
+        delBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // 阻止冒泡，防止触发播放
+            deleteSong(index);
+        });
+
+        playlistItems.appendChild(li);
+    });
+    
+    updatePlaylistHighlight();
+}
+
+function deleteSong(index) {
+    // 1. 从数组移除
+    playlist.splice(index, 1);
+    
+    // 2. 逻辑修正
     if (playlist.length === 0) {
+        // 删光了
+        audio.pause();
+        audio.src = "";
         showEmptyState();
         return;
     }
+
+    // 如果删除的是当前正在放的歌
+    if (index === currentSongIndex) {
+        // 如果是最后一首被删了，currentSongIndex 会自动指向新的长度（越界），需要修正
+        if (currentSongIndex >= playlist.length) {
+            currentSongIndex = 0;
+        }
+        // 重新加载当前索引（因为数组变了，当前索引对应的是原来的下一首）
+        loadSong(currentSongIndex, isPlaying); 
+    } 
+    // 如果删除的是当前歌曲之前的歌，当前索引需要 -1 才能对应上原来的歌
+    else if (index < currentSongIndex) {
+        currentSongIndex--;
+    }
     
-    playlist.forEach((song, index) => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <span style="font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 180px;">${song.title}</span> 
-            <span style="font-size:0.8rem; opacity:0.7; margin-left:10px;">${song.artist}</span>
-        `;
-        li.addEventListener('click', () => {
-            loadSong(index);
-            playlistModal.classList.remove('show');
-        });
-        playlistItems.appendChild(li);
-    });
+    // 3. 重新渲染
+    renderPlaylist();
 }
 
-function updatePlaylistHighlight(index) {
+function updatePlaylistHighlight() {
     const items = playlistItems.querySelectorAll('li');
     items.forEach(item => item.classList.remove('active'));
-    // 注意：如果有“暂无歌曲”的占位符，这里可能会报错，所以加个判断
-    if(items[index] && playlist.length > 0) items[index].classList.add('active');
+    if (playlist.length > 0 && items[currentSongIndex]) {
+        items[currentSongIndex].classList.add('active');
+        // 滚动可视区域
+        // items[currentSongIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
 }
 
+// 列表开关
 playlistBtn.addEventListener('click', () => {
     playlistModal.classList.add('show');
-    // 滚动到当前播放的歌曲
-    const activeItem = playlistItems.querySelector('.active');
-    if(activeItem) activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    updatePlaylistHighlight();
 });
+closePlaylistBtn.addEventListener('click', () => playlistModal.classList.remove('show'));
 
-closePlaylistBtn.addEventListener('click', () => {
-    playlistModal.classList.remove('show');
-});
-
-// --- 4. 上传文件：自动添加到列表 ---
+// --- 6. 上传与颜色提取 (保持不变) ---
 fileInput.addEventListener('change', (e) => {
     const files = e.target.files;
     if (files.length > 0) {
-        const file = files[0]; // 这里只处理单选，如果想支持多选需遍历
+        const file = files[0];
         const objectUrl = URL.createObjectURL(file);
-        
-        // 1. 创建新歌曲对象
         const newSong = {
-            title: file.name, // 默认先用文件名
+            title: file.name,
             artist: "本地上传",
-            cover: null,      // 稍后读取
+            cover: null,
             src: objectUrl,
-            theme: null       // 稍后生成
+            theme: null
         };
+        
+        // 如果是第一次上传（列表为空），需要先清空空状态
+        const wasEmpty = playlist.length === 0;
 
-        // 2. 读取 ID3 信息
+        // 异步读取 ID3
         if(window.jsmediatags) {
-            songTitle.innerText = "解析中..."; // 临时状态
-            
             jsmediatags.read(file, {
                 onSuccess: function(tag) {
                     const tags = tag.tags;
                     newSong.title = tags.title || file.name;
                     newSong.artist = tags.artist || "未知艺术家";
-
                     if (tags.picture) {
                         const { data, format } = tags.picture;
                         let base64String = "";
@@ -234,47 +369,30 @@ fileInput.addEventListener('change', (e) => {
                         }
                         newSong.cover = `data:${format};base64,${window.btoa(base64String)}`;
                     }
-
-                    // 添加到列表
-                    addSongToPlaylistAndPlay(newSong);
+                    addSongAndPlay(newSong, wasEmpty);
                 },
-                onError: function(error) {
-                    // 读取失败也照样添加
-                    addSongToPlaylistAndPlay(newSong);
-                }
+                onError: () => addSongAndPlay(newSong, wasEmpty)
             });
         } else {
-            // 没有库的情况下直接添加
-            addSongToPlaylistAndPlay(newSong);
+            addSongAndPlay(newSong, wasEmpty);
         }
     }
-    // 清空 input 使得同一个文件可以再次被选择
-    fileInput.value = ''; 
+    fileInput.value = '';
 });
 
-function addSongToPlaylistAndPlay(song) {
-    // 推入数组
+function addSongAndPlay(song, wasEmpty) {
     playlist.push(song);
-    
-    // 重新渲染列表
     renderPlaylist();
-    
-    // 立即播放这首新歌 (它是数组最后一个)
+    // 播放新加的这首
     const newIndex = playlist.length - 1;
     loadSong(newIndex, true);
 }
 
-// 辅助：从图片提取颜色并应用
 function extractColorFromCover(imageSrc) {
-    if (!imageSrc || imageSrc.includes('placeholder')) {
-        applyRandomTheme();
-        return;
-    }
-
+    if (!imageSrc || imageSrc.includes('placeholder')) return applyRandomTheme();
     const tempImg = new Image();
-    tempImg.crossOrigin = "Anonymous"; // 防止跨域报错
+    tempImg.crossOrigin = "Anonymous";
     tempImg.src = imageSrc;
-    
     tempImg.onload = function() {
         try {
             const color = colorThief.getColor(tempImg);
@@ -284,23 +402,19 @@ function extractColorFromCover(imageSrc) {
                 border: `rgba(${r}, ${g}, ${b}, 0.4)`,
                 halo: `rgba(${r}, ${g}, ${b}, 0.2)`
             };
-            // 将提取到的颜色保存回 current song，这样切回来不用重新计算
             playlist[currentSongIndex].theme = newTheme; 
             applyTheme(newTheme);
-        } catch (e) {
-            applyRandomTheme();
-        }
+        } catch (e) { applyRandomTheme(); }
     };
     tempImg.onerror = () => applyRandomTheme();
 }
 
 function applyRandomTheme() {
-    // 默认备用颜色
     const theme = { primary: "#627d98", border: "rgba(98, 125, 152, 0.4)", halo: "rgba(98, 125, 152, 0.2)" };
     applyTheme(theme);
 }
 
-// --- 5. 其他控制 (进度条/音量) 保持不变 ---
+// 进度条与音量 (保持不变)
 audio.addEventListener('timeupdate', (e) => {
     const { duration, currentTime } = e.srcElement;
     if (isNaN(duration)) return;
@@ -308,17 +422,14 @@ audio.addEventListener('timeupdate', (e) => {
     currentTimeEl.innerText = formatTime(currentTime);
     durationEl.innerText = formatTime(duration);
 });
-
 progressBar.addEventListener('input', () => {
     if (!audio.src) return;
     audio.currentTime = (progressBar.value / 100) * audio.duration;
 });
-
 volumeSlider.addEventListener('input', (e) => {
     audio.volume = e.target.value;
-    updateMuteIcon();
+    muteBtn.className = audio.volume === 0 ? 'fa-solid fa-volume-xmark icon-btn' : 'fa-solid fa-volume-high icon-btn';
 });
-
 muteBtn.addEventListener('click', () => {
     if (isMuted) {
         audio.volume = previousVolume;
@@ -329,19 +440,10 @@ muteBtn.addEventListener('click', () => {
         isMuted = true;
     }
     volumeSlider.value = audio.volume;
-    updateMuteIcon();
+    muteBtn.className = isMuted ? 'fa-solid fa-volume-xmark icon-btn' : 'fa-solid fa-volume-high icon-btn';
 });
-
-function updateMuteIcon() {
-    if (audio.volume === 0) {
-        muteBtn.className = 'fa-solid fa-volume-xmark icon-btn hover-effect';
-    } else {
-        muteBtn.className = 'fa-solid fa-volume-high icon-btn hover-effect';
-    }
-}
-
-function formatTime(seconds) {
-    const min = Math.floor(seconds / 60);
-    const sec = Math.floor(seconds % 60);
-    return `${min}:${sec < 10 ? '0' + sec : sec}`;
+function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec < 10 ? '0' + sec : sec}`;
 }

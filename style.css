@@ -331,3 +331,48 @@ body {
     .album-cover { width: 120px; height: 120px; }
     .playlist-modal { width: 90%; }
 }
+
+/* --- 新增：播放列表删除按钮样式 --- */
+.playlist-items li {
+    padding: 12px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center; /* 垂直居中 */
+    color: var(--text-main);
+    font-size: 0.95rem;
+    transition: background 0.2s;
+    border-bottom: 1px solid rgba(0,0,0,0.03);
+}
+
+.song-info-wrapper {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex: 1; /* 占据剩余空间 */
+}
+
+.delete-btn {
+    padding: 8px;
+    color: #ccc;
+    transition: color 0.2s;
+    margin-left: 10px;
+}
+.delete-btn:hover {
+    color: #ff6b81; /* 删除时的红色警示 */
+}
+
+/* --- 新增：播放模式按钮状态 --- */
+
+/* 激活状态 (例如随机播放开启) */
+.icon-btn.active {
+    color: var(--theme-color) !important; /* 使用当前主题色 */
+    text-shadow: 0 0 10px var(--halo-color);
+}
+
+/* 单曲循环时的图标稍微改一下样式 */
+.fa-1 {
+    font-weight: bold;
+    font-family: sans-serif; /* 数字1用无衬线字体更好看 */
+}

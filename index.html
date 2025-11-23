@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body>
 
     <!-- 背景层：固定颜色，不再变色 -->
@@ -44,7 +46,9 @@
             <div class="right-panel">
                 <div class="vinyl-halo">
                     <div class="vinyl-disk" id="vinyl">
-                        <div class="album-cover" id="album-art" style="background-image: url('https://via.placeholder.com/300/e0e0e0/888888?text=Music');"></div>
+                        <div class="album-cover" id="album-art"
+                            style="background-image: url('https://via.placeholder.com/300/e0e0e0/888888?text=Music');">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -64,27 +68,27 @@
             <!-- 中间 -->
             <div class="center-controls">
                 <div class="buttons">
-                    <i class="fa-solid fa-shuffle secondary-icon icon-btn hover-effect"></i>
+                    <!-- 1. 随机播放按钮 (增加 id="shuffle-btn") -->
+                    <i class="fa-solid fa-shuffle secondary-icon icon-btn hover-effect" id="shuffle-btn"
+                        title="随机播放"></i>
+
                     <i class="fa-solid fa-backward-step icon-btn hover-effect" id="prev-btn"></i>
-                    
+
                     <div class="play-toggle hover-effect" id="play-pause-btn">
                         <i class="fa-solid fa-play" id="play-icon"></i>
                     </div>
-                    
+
                     <i class="fa-solid fa-forward-step icon-btn hover-effect" id="next-btn"></i>
-                    <i class="fa-solid fa-repeat secondary-icon icon-btn hover-effect"></i>
-                </div>
-                <div class="progress-container">
-                    <span class="time" id="current-time">00:00</span>
-                    <input type="range" id="progress-bar" value="0" min="0" max="100">
-                    <span class="time" id="duration">00:00</span>
+
+                    <!-- 2. 循环模式按钮 (增加 id="loop-btn") -->
+                    <i class="fa-solid fa-repeat secondary-icon icon-btn hover-effect" id="loop-btn" title="列表循环"></i>
                 </div>
             </div>
 
             <!-- 右侧：音量与列表 -->
             <div class="right-actions">
                 <div class="tag-badge">Hi-Res</div>
-                
+
                 <!-- 音量控制容器 -->
                 <div class="volume-wrapper">
                     <i class="fa-solid fa-volume-high icon-btn hover-effect" id="mute-btn"></i>
@@ -98,12 +102,13 @@
         </div>
     </div>
 
-<!-- 引入 jsmediatags (读取MP3信息) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
-<!-- 引入 ColorThief (提取颜色) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
+    <!-- 引入 jsmediatags (读取MP3信息) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+    <!-- 引入 ColorThief (提取颜色) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
 
-<!-- 你的主脚本 -->
-<script src="script.js"></script>
+    <!-- 你的主脚本 -->
+    <script src="script.js"></script>
 </body>
+
 </html>
