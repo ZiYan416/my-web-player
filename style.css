@@ -1,8 +1,19 @@
+:root {
+    /* 提取自第一张图片的色调：奶绿与淡黄 */
+    --bg-gradient-start: #f2fce2; /* 极淡的绿色 */
+    --bg-gradient-end: #fffdf2;   /* 极淡的黄色 */
+    --primary-color: #8ccf5e;     /* 清新的草绿 (播放按钮/高亮) */
+    --text-main: #333333;
+    --text-sub: #888888;
+    --halo-color: rgba(165, 216, 113, 0.25); /* 光环颜色 */
+    --halo-border: rgba(255, 255, 255, 0.4);
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', sans-serif;
+    font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
 }
 
 body {
@@ -11,120 +22,155 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #e0f7fa;
+    /* 纯色渐变感背景 */
+    background: linear-gradient(120deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
 }
 
-/* 动态背景层 */
-.background {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
-    z-index: -1;
-    filter: blur(20px);
-    transition: background 1s ease;
-}
-
-.player-container {
-    width: 90%;
-    height: 90%;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+.player-window {
+    width: 95%;
+    height: 95%;
+    max-width: 1400px;
+    background: rgba(255, 255, 255, 0.1); /* 极低透明度，为了透出背景 */
+    border-radius: 24px;
     display: flex;
     flex-direction: column;
-    padding: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    position: relative;
+    /* 不使用模糊的backdrop-filter，保持清新透亮 */
 }
 
-.window-controls {
-    padding: 10px;
-    color: #555;
+/* 顶部 */
+.top-bar {
+    height: 50px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 30px;
+    color: var(--text-sub);
+    font-size: 1.2rem;
 }
+.window-actions { display: flex; gap: 15px; font-size: 1rem; }
 
-.main-content {
+/* 主体区域 */
+.main-area {
     flex: 1;
     display: flex;
     align-items: center;
+    overflow: hidden;
 }
 
-/* 左侧布局 */
+/* 左侧面板 */
 .left-panel {
     flex: 1;
-    padding-left: 50px;
+    padding-left: 80px;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    z-index: 2; /* 保证文字在最上层 */
 }
 
-.song-info h1 {
-    font-size: 2.5rem;
-    color: #333;
+.song-header { margin-bottom: 40px; }
+
+.song-header h1 {
+    font-size: 3rem;
+    font-weight: 600;
+    color: var(--text-main);
     margin-bottom: 10px;
+    letter-spacing: -1px;
 }
 
-.song-info p {
+.song-header p {
     font-size: 1.2rem;
-    color: #666;
-    margin-bottom: 30px;
+    color: var(--text-sub);
 }
 
-.lyrics-container {
-    height: 300px;
-    overflow: hidden;
-    mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+/* 歌词区域 */
+.lyrics-box {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
 .lyric-line {
-    font-size: 1.1rem;
-    color: #777;
-    margin: 15px 0;
-    transition: all 0.3s;
+    font-size: 1.3rem;
+    color: #a0a0a0;
+    transition: all 0.3s ease;
+}
+
+.lyric-line.jp {
+    font-size: 0.9rem;
+    margin-top: -10px;
+    margin-bottom: 5px;
+    font-weight: 300;
+}
+
+.lyric-line.highlight {
+    color: var(--primary-color); /* 绿色高亮 */
+    font-weight: bold;
 }
 
 .lyric-line.active {
-    color: #2c3e50; /* 类似截图的高亮色 */
+    color: var(--text-main);
+    font-size: 1.6rem;
     font-weight: bold;
-    font-size: 1.3rem;
-    transform: scale(1.05);
-    transform-origin: left;
+    margin: 10px 0;
 }
 
-/* 右侧黑胶唱片 */
+/* 右侧：磨砂黑胶核心设计 */
 .right-panel {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    flex: 1.2; /* 让右侧稍微宽一点 */
+    height: 100%;
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 溢出隐藏，让大圆盘切边 */
+    overflow: visible; 
 }
 
-.vinyl-wrapper {
-    width: 400px;
-    height: 400px;
-    background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/12in-Vinyl-LP-Record-Angle.jpg/1024px-12in-Vinyl-LP-Record-Angle.jpg') no-repeat center; /* 简化的黑胶纹理模拟 */
-    background-size: cover;
+/* 那个巨大的彩色光环 */
+.vinyl-halo {
+    width: 550px;
+    height: 550px;
     border-radius: 50%;
+    background: var(--halo-color);
+    border: 1px solid var(--halo-border);
+    /* 关键：模拟黑胶纹理的径向渐变 */
+    background-image: repeating-radial-gradient(
+        rgba(255, 255, 255, 0.1) 0px,
+        rgba(255, 255, 255, 0.1) 2px,
+        transparent 3px,
+        transparent 6px
+    );
+    backdrop-filter: blur(10px); /* 磨砂感 */
+    box-shadow: 0 20px 50px rgba(140, 207, 94, 0.15);
+    
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    /* 加上蓝色外圈模拟截图效果 */
-    border: 40px solid rgba(65, 155, 249, 0.3); 
+    
+    /* 稍微向右偏移，模拟图片构图 */
+    transform: translateX(50px); 
 }
 
 .vinyl-disk {
-    width: 100%;
-    height: 100%;
+    width: 360px;
+    height: 360px;
     border-radius: 50%;
+    background: #111; /* 黑胶底色 */
     display: flex;
     justify-content: center;
     align-items: center;
-    animation: spin 10s linear infinite;
-    animation-play-state: paused; /* 默认暂停 */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    animation: spin 20s linear infinite;
+    animation-play-state: paused;
+    /* 纯黑胶纹理 */
+    background: radial-gradient(
+        #111 50%,
+        #1a1a1a 55%,
+        #111 60%,
+        #1a1a1a 65%,
+        #111 100%
+    );
 }
 
 @keyframes spin {
@@ -133,78 +179,128 @@ body {
 }
 
 .album-cover {
-    width: 220px;
-    height: 220px;
+    width: 240px;
+    height: 240px;
     border-radius: 50%;
     background-size: cover;
     background-position: center;
-    border: 5px solid #111;
+    border: 8px solid #0a0a0a;
 }
 
 /* 底部控制栏 */
 .control-bar {
-    height: 80px;
+    height: 100px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
+    padding: 0 40px;
+    /* 底部也有一点点背景色，但很淡 */
 }
 
-.file-upload .upload-btn {
+.icon-btn {
+    font-size: 1.2rem;
+    color: var(--text-sub);
     cursor: pointer;
-    padding: 8px 15px;
-    background: rgba(255,255,255,0.5);
-    border-radius: 20px;
-    font-size: 0.9rem;
-    transition: 0.2s;
+    margin-right: 15px;
+    transition: color 0.2s;
 }
-.file-upload .upload-btn:hover {
-    background: white;
-}
+.icon-btn:hover { color: var(--text-main); }
 
-.controls {
+.text-btn {
+    font-size: 0.9rem;
     display: flex;
     align-items: center;
-    gap: 20px;
-    font-size: 1.2rem;
-    color: #333;
+    gap: 8px;
+    font-weight: 500;
 }
 
-.play-btn-wrapper {
-    width: 50px;
-    height: 50px;
-    background: #4a90e2;
+/* 中间控制区 */
+.center-controls {
+    flex: 1;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.buttons {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    font-size: 1.4rem;
+    color: var(--text-main);
+}
+
+.secondary-icon { font-size: 1.1rem; color: #aaa; }
+
+.play-toggle {
+    width: 55px;
+    height: 55px;
+    background: var(--primary-color);
     border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
     color: white;
+    font-size: 1.2rem;
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(74, 144, 226, 0.4);
+    box-shadow: 0 5px 15px rgba(140, 207, 94, 0.4);
+    transition: transform 0.2s;
 }
+.play-toggle:hover { transform: scale(1.05); }
 
-.play-btn-wrapper:hover {
-    transform: scale(1.1);
-}
-
-.progress-area {
-    flex: 1;
+/* 极简进度条 */
+.progress-container {
+    width: 100%;
     display: flex;
     align-items: center;
-    margin: 0 30px;
     gap: 10px;
-    color: #555;
     font-size: 0.8rem;
+    color: var(--text-sub);
 }
 
 #progress-bar {
     flex: 1;
+    height: 4px;
+    appearance: none;
+    background: rgba(0,0,0,0.05);
+    border-radius: 2px;
     cursor: pointer;
-    accent-color: #4a90e2;
 }
 
-.extra-controls {
+#progress-bar::-webkit-slider-thumb {
+    appearance: none;
+    width: 10px;
+    height: 10px;
+    background: var(--text-main);
+    border-radius: 50%;
+    transition: transform 0.1s;
+}
+#progress-bar:hover::-webkit-slider-thumb { transform: scale(1.3); }
+
+/* 右侧标签 */
+.right-actions {
     display: flex;
-    gap: 20px;
-    color: #555;
+    align-items: center;
+    gap: 15px;
+}
+.tag-badge {
+    border: 1px solid #d4bc8b; /* 金色边框 */
+    color: #d4bc8b;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    border-radius: 4px;
+}
+
+/* 响应式适配 */
+@media (max-width: 900px) {
+    .main-area { flex-direction: column; text-align: center; }
+    .left-panel { padding-left: 0; margin-top: 20px; }
+    .right-panel { overflow: hidden; height: 400px; }
+    .vinyl-halo { width: 300px; height: 300px; transform: translateX(0); }
+    .vinyl-disk { width: 200px; height: 200px; }
+    .album-cover { width: 140px; height: 140px; }
+    .lyric-line { font-size: 1rem; }
+    .lyric-line.active { font-size: 1.2rem; }
 }
